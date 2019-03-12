@@ -374,6 +374,11 @@ exports.extensionBundles = [
     type: TYPES.MISC,
   },
   {
+    name: 'amp-funnel-relay',
+    version: '0.1',
+    latestVersion: '0.1',
+    type: TYPES.MISC},
+  {
     name: 'amp-fx-collection',
     version: '0.1',
     latestVersion: '0.1',

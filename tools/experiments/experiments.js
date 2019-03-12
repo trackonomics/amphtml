@@ -439,6 +439,12 @@ const EXPERIMENTS = [
     spec: 'https://github.com/ampproject/amphtml/issues/19869',
     cleanupIssue: 'TODO',
   },
+  {
+    id: 'amp-funnel-relay',
+    name: 'AMP Funnel Relay script for publishers',
+    spec: 'https://github.com/ampproject/amphtml/issues/#####',
+    cleanupIssue: 'https://github.com/ampproject/amphtml/issues/#####',
+  },
 ];
 
 if (getMode().localDev) {
