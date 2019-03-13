@@ -53,6 +53,7 @@ export class AmpFunnelRelay extends AMP.BaseElement {
     const scriptEm = document.createElement('script');
     scriptEm.src = this.element.getAttribute('src');
     scriptEm.id = 'funnel-relay-installer';
+    scriptEm.setAttribute('async', '');
     document.body.appendChild(scriptEm);
   }
 }
