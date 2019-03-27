@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
+import {FunnelRelay} from './funnel_relay';
+import {LOCAL_ENV, PROD_ENV, TEST_ENV} from './constants';
 import {Layout} from '../../../src/layout';
-import {isExperimentOn} from '../../../src/experiments';
-import {userAssert} from '../../../src/log';
+import {Services} from '../../../src/services';
 
 /** @const */
 const EXPERIMENT = 'amp-funnel-relay';
@@ -29,7 +30,6 @@ export class AmpFunnelRelay extends AMP.BaseElement {
   /** @param {!AmpElement} element */
   constructor(element) {
     super(element);
-
     // Declare instance variables with type annotations.
   }
 
@@ -40,21 +40,78 @@ export class AmpFunnelRelay extends AMP.BaseElement {
 
   /** @override */
   buildCallback() {
-    //We want the tag to work without user's need to turn it on.
-    //userAssert(isExperimentOn(this.win, 'amp-funnel-relay'),
-    //    `Experiment ${EXPERIMENT} is not turned on.`);
-    // Get attributes, assertions of values, assign instance variables.
-    // Build lightweight DOM and append to this.element.
+    this.ampDoc_ = this.getAmpDoc();
+    this.envSettings_ = this.getEnvSettings();
+    return this.ampDoc_.whenBodyAvailable().then(() => {
+      const envCode = this.element.getAttribute('env_code');
+      if (envCode == null || envCode.length === 0) {
+        console.log('amp-funnel-relay -' +
+            ' Mandatory attribute \'env_code\' is missing! Operation ignored.');
+        return;
+      }
+
+      this.loadSettings_().then(settings => {
+        new FunnelRelay(settings, this.win, this.ampDoc_);
+      });
+    });
   }
 
   /** @override */
   preconnectCallback() {
     //render funnel-relay script
-    const scriptEm = document.createElement('script');
+    /*const scriptEm = document.createElement('script');
     scriptEm.src = this.element.getAttribute('src');
     scriptEm.id = 'funnel-relay-installer';
     scriptEm.setAttribute('async', '');
-    document.body.appendChild(scriptEm);
+    document.body.appendChild(scriptEm);*/
+  }
+
+  /**
+   * Load  funnel-relay settings
+   * @return {*}
+   * @private
+   */
+  loadSettings_() {
+    const options = {
+      method: 'GET',
+      ampCors: false,
+    };
+    const settingsUrl = this.envSettings_.SETTINGS_ENDPOINT.replace(
+        '{name}', this.getSettingsName(),
+    );
+    const xhr = Services.xhrFor(this.win);
+    return xhr.fetchJson(settingsUrl, options).then(resp => {
+      return resp.json(); // Transform the data into json
+    });
+  }
+
+  /**
+   * Get the environment settings according to attribute "env" set by user.
+   * @return {{}} settings object
+   */
+  getEnvSettings() {
+    switch (this.element.getAttribute('env')) {
+      case 'local':
+        return LOCAL_ENV;
+      case 'test':
+        return TEST_ENV;
+      default:
+        return PROD_ENV;
+    }
+  }
+
+  /**
+   * Get profile code that involve two attributes:
+   * 1. env_code
+   * 2. profile
+   */
+  getSettingsName() {
+    let name = this.element.getAttribute('env_code');
+    const profile = this.element.getAttribute('profile');
+    if (profile != null && profile.length > 0) {
+      name += '_' + profile;
+    }
+    return name;
   }
 }
 

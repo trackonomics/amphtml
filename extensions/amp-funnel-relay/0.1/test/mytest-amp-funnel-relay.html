@@ -1,28 +1,152 @@
 <!doctype html>
 <html ⚡>
 <head>
-  <meta charset="utf-8">
-  <link rel="canonical" href="self.html" />
-  <meta name="viewport" content="width=device-width,minimum-scale=1">
-  <meta name="amp-experiments-opt-in" content="amp-funnel-relay">
+    <title>My Test Page</title>
+    <meta charset="utf-8">
+    <link rel="canonical" href="self.html"/>
+    <meta name="viewport" content="width=device-width,minimum-scale=1">
+    <meta name="amp-experiments-opt-in" content="amp-funnel-relay">
+    <script async custom-element="amp-analytics" src="https://cdn.ampproject.org/v0/amp-analytics-0.1.js"></script>
+    <script async custom-element="amp-ad" src="https://cdn.ampproject.org/v0/amp-ad-0.1.js"></script>
+    <!-- CSP -->
+    <!-- <meta http-equiv="Content-Security-Policy" content="default-src * data: blob:; script-src blob: http://localhost:8000/dist/v0.js http://localhost:8000/dist/v0/amp-script-0.1.js https://cdn.ampproject.org/v0.js https://cdn.ampproject.org/v0/ https://cdn.ampproject.org/viewer/ https://cdn.ampproject.org/rtv/; object-src 'none'; style-src 'unsafe-inline' https://cdn.ampproject.org/rtv/ https://cdn.materialdesignicons.com https://cloud.typography.com https://fast.fonts.net https://fonts.googleapis.com https://maxcdn.bootstrapcdn.com https://p.typekit.net https://use.fontawesome.com https://use.typekit.net; report-uri https://csp-collector.appspot.com/csp/amp"> -->
 
-  <!-- CSP -->
-  <!-- <meta http-equiv="Content-Security-Policy" content="default-src * data: blob:; script-src blob: http://localhost:8000/dist/v0.js http://localhost:8000/dist/v0/amp-script-0.1.js https://cdn.ampproject.org/v0.js https://cdn.ampproject.org/v0/ https://cdn.ampproject.org/viewer/ https://cdn.ampproject.org/rtv/; object-src 'none'; style-src 'unsafe-inline' https://cdn.ampproject.org/rtv/ https://cdn.materialdesignicons.com https://cloud.typography.com https://fast.fonts.net https://fonts.googleapis.com https://maxcdn.bootstrapcdn.com https://p.typekit.net https://use.fontawesome.com https://use.typekit.net; report-uri https://csp-collector.appspot.com/csp/amp"> -->
-
-  <style amp-boilerplate>body{-webkit-animation:-amp-start 8s steps(1,end) 0s 1 normal both;-moz-animation:-amp-start 8s steps(1,end) 0s 1 normal both;-ms-animation:-amp-start 8s steps(1,end) 0s 1 normal both;animation:-amp-start 8s steps(1,end) 0s 1 normal both}@-webkit-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@-moz-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@-ms-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@-o-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}@keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}</style><noscript><style amp-boilerplate>body{-webkit-animation:none;-moz-animation:none;-ms-animation:none;animation:none}</style></noscript>
-  <style amp-custom>
-    button {
-      border: solid 1px black;
+    <style amp-boilerplate>body {-webkit-animation: -amp-start 8s steps(1, end) 0s 1 normal both;-moz-animation: -amp-start 8s steps(1, end) 0s 1 normal both;-ms-animation: -amp-start 8s steps(1, end) 0s 1 normal both;animation: -amp-start 8s steps(1, end) 0s 1 normal both}
+    @-webkit-keyframes -amp-start {
+        from {visibility: hidden}
+        to {visibility: visible}
     }
-  </style>
-  <script async src="/dist/amp.js"></script>
-  <script async custom-element="amp-funnel-relay" src="/dist/v0/amp-funnel-relay-0.1.max.js" ></script>
+    @-moz-keyframes -amp-start {
+        from {visibility: hidden}
+        to {visibility: visible}
+    }
+    @-ms-keyframes -amp-start {
+        from {visibility: hidden}
+        to {visibility: visible}
+    }
+    @-o-keyframes -amp-start {
+        from {visibility: hidden}
+        to {visibility: visible}
+    }
+    @keyframes -amp-start {
+        from {visibility: hidden}
+        to {visibility: visible}
+    }</style>
+    <noscript>
+        <style amp-boilerplate>body {-webkit-animation: none;-moz-animation: none;-ms-animation: none;animation: none}</style>
+    </noscript>
+    <style amp-custom>
+        button {
+            border: solid 1px black;
+        }
+    </style>
+    <script async src="/dist/amp.js"></script>
+    <script async custom-element="amp-funnel-relay" src="/dist/v0/amp-funnel-relay-0.1.max.js"></script>
+
+
+    <amp-funnel-relay src="https://localmagiclinks.trackonomics.net/client/static/12345.js"
+                      layout="nodisplay" env_code="12345" env="local">
+    </amp-funnel-relay>
+
+
 </head>
 <body>
-  <amp-funnel-relay src="https://localmagiclinks.trackonomics.net/client/static/12345.js" layout="nodisplay"></amp-funnel-relay>
-
-  <p>
+<!--
+a[data-ml='true']
+"label" : "${htmlAttr(a#funnel-relay-link-clicked,data-event-label)}",
+"value" : "${htmlAttr(a#funnel-relay-link-clicked,data-event-value)}",
+"action" : "${htmlAttr(a#funnel-relay-link-clicked,data-event-action)}",
+"category": "${htmlAttr(a#funnel-relay-link-clicked,data-event-category)}"
+-->
+<p>
     <a href="https://click.linksynergy.com/deeplink?id=12345&mid=12345&u1=123&murl=http%3A%2F%2F123stores.com%2F" target="_blank">Linkshare Link</a>
-  </p>
+
+
+    </button>
+
+
+    <button id="funnel-relay-link-clicked" class="funnel-relay-link-clicked"
+            data-myevent-value="n/a"
+            data-myevent-label="n/a"
+            data-myevent-action="n/a"
+            data-myevent-category="n/a">test clicks
+    </button>
+
+    <!-- <amp-analytics>
+         <script type="application/json">
+             {
+                 "requests": {
+                     "pageview": "https://localmagiclinks.trackonomics.net/server/amptest.php?reqType=pageview&url=${canonicalUrl}&title=${title}&acct=${account}&clientId=${clientId(cid-scope)}",
+                     "event": "https://localmagiclinks.trackonomics.net/server/amptest.php?reqType=event&url=${canonicalUrl}&account=${account}&category=${htmlAttr(button,id)}"
+                 },
+                 "vars": {
+                     "account": "ABC123",
+                     "title": "Homepage",
+                     "category" : "${htmlAttr(button,id)}"
+                 },
+                 "triggers": {
+                     "some-event": {
+                         "on": "click",
+                         "selector": "#funnel-relay-link-clicked",
+                         "request": "event",
+
+                         "vars": {
+                             "title": "My homepage",
+                             "clientId": "my user"
+                         }
+                     }
+                 }
+             }
+         </script>
+     </amp-analytics>-->
+
+</p>
+
+<amp-analytics type="gtag" data-credentials="include">
+    <script type="application/json">
+        {
+            "vars": {
+                "gtag_id": "UA-52229835-23",
+                "config": {
+                    "UA-52229835-19": {
+                        "groups": "default"
+                    }
+                }
+            },
+            "triggers": {
+                "anchorClicks": {
+                    "on": "click",
+                    "selector": "#funnel-relay-link-clicked",
+                    "request": "event",
+                    "vars": {
+                        "event_category": "category is ${myeventCategory}",
+                        "event_name": "action is ${htmlAttr(button,data-event-action)}",
+                        "event_label": "label is ${htmlAttr(button,data-event-label)}",
+                        "value": "1",
+                        "method": "Google"
+                    }
+                }
+            }
+
+        }
+    </script>
+</amp-analytics>
+
+<!--
+ "triggers": {
+                "anchorClicks": {
+                    "on": "click",
+                    "selector": "#funnel-relay-link-clicked",
+                    "request": "event",
+                    "vars": {
+                        "event_category": "category is ${myeventCategory}",
+                        "event_name": "action is ${htmlAttr(button,data-event-action)}",
+                        "event_label": "label is ${htmlAttr(button,data-event-label)}",
+                        "value": "1",
+                        "method": "Google"
+                    }
+                }
+            }
+-->
 </body>
 </html>
