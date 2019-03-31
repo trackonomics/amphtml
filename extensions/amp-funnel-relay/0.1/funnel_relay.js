@@ -468,7 +468,7 @@ export class FunnelRelay {
         && !this.isEmpty_(options.analytics_code)) {
 
       //todo add support for tracking events
-      /*this.gaTracker = new GATracker(options.analytics_code, this._win,
+      this.gaTracker = new GATracker(options.analytics_code, this._win,
           this._ampDoc);
       if (this.asBoolean_(options.pageview)) {
         this.gaTracker.trackPageView();
@@ -485,7 +485,7 @@ export class FunnelRelay {
           this.markLink_('feature', 'track_events', anchor);
         }
         this.gaTracker.trackPageView();
-      }*/
+      }
     }
   }
 
@@ -1262,61 +1262,31 @@ export class GATracker {
    *     the event (e.g. 42)
    * @see https://developers.google.com/analytics/devguides/collection/analyticsjs/events
    */
-  /*trackEvent(eventCategory, eventAction, eventLabel, eventValue) {
-    //todo
-    /!*const target = this._win.document.createElement('div');
+  trackEvent(eventCategory, eventAction, eventLabel, eventValue) {
+    const em = document.getElementById('funnel-relay-link-clicked');
+    if (em != null) {
+      em.setAttribute('data-vars-category', eventCategory);
+      em.setAttribute('data-vars-action', eventAction);
+      em.setAttribute('data-vars-label', eventLabel);
+      em.setAttribute('data-vars-value', eventValue);
+      em.click();
+    }
+
+    /*const target = this._win.document.createElement('div');
     this._win.document.body.appendChild(target);
     const service = new InstrumentationService(this._ampDoc);
     service.triggerEventForTarget(target,
-        'click', {'event_category': 'programmatic'});*!/
+        'click', {'event_category': 'programmatic'});*/
 
-    /!*const em = document.createElement('a');
-    em.id = 'funnel-relay-link-clicked';
-    em.setAttribute('data-event-category', eventCategory);
-    em.setAttribute('data-event-action', eventAction);
-    em.setAttribute('data-event-label', eventLabel);
-    em.setAttribute('data-event-value', eventValue);
-    em.click();*!/
-    /!*if (window.ga) {
-      window.ga('mlTracker.send', 'event', {
-        eventCategory: eventCategory,
-        eventAction: eventAction,
-        eventLabel: eventLabel,
-        eventValue: eventValue,
-        fieldsObject: fieldsObject,
-        transport: 'beacon',
-      });
-    }*!/
-
-  }*/
-
-  /**
-   * Track screenview.
-   *
-   * @param {string} screenName
-   */
-  /*trackScreenView() {
-    //args line screenName
-    //todo
-    /!*if (window.ga) {
-      window.ga(function() {
-        window.ga('mlTracker.send', 'screenview', {
-          'screenName': screenName,
-          'appId': this.appId,
-          'appVersion': this.appVersion,
-          'appName': this.appName,
-        });
-      });
-    }*!/
-  }*/
+  }
 
   /**
    * Track page view
    *
    */
-  /*trackPageView() {
+  trackPageView() {
     //todo
-    /!*if (window.ga) {
+    /*if (window.ga) {
       window.ga(function() {
         window.ga('mlTracker.set', 'page', location.href);
         window.ga('mlTracker.send', 'pageview', {
@@ -1324,8 +1294,8 @@ export class GATracker {
           title: document.title,
         });
       });
-    }*!/
-  }*/
+    }*/
+  }
 
 }
 

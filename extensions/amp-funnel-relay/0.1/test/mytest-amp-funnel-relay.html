@@ -66,10 +66,10 @@ a[data-ml='true']
 
 
     <button id="funnel-relay-link-clicked" class="funnel-relay-link-clicked"
-            data-myevent-value="n/a"
-            data-myevent-label="n/a"
-            data-myevent-action="n/a"
-            data-myevent-category="n/a">test clicks
+            data-vars-value="n/a"
+            data-vars-label="n/a"
+            data-vars-action="n/a"
+            data-vars-category="n/a" hidden>test clicks
     </button>
 
     <!-- <amp-analytics>
@@ -119,10 +119,10 @@ a[data-ml='true']
                     "selector": "#funnel-relay-link-clicked",
                     "request": "event",
                     "vars": {
-                        "event_category": "category is ${myeventCategory}",
-                        "event_name": "action is ${htmlAttr(button,data-event-action)}",
-                        "event_label": "label is ${htmlAttr(button,data-event-label)}",
-                        "value": "1",
+                        "event_category": "${category}",
+                        "event_name": "${action}",
+                        "event_label": "${label}",
+                        "value": "${value}",
                         "method": "Google"
                     }
                 }
