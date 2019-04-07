@@ -21,7 +21,6 @@ export const LOCAL_ENV = {
       `${BASE_API_URL_LOCAL}/client/static/{name}_settings.json`,
 };
 
-
 const BASE_API_URL_TEST = 'https://magiclinks2.trackonomics.net';
 /** @const @enum {string} */
 export const TEST_ENV = {
@@ -32,5 +31,5 @@ export const TEST_ENV = {
 const BASE_API_URL_PROD = 'https://magiclinks.trackonomics.net';
 export const PROD_ENV = {
   SETTINGS_ENDPOINT:
-    `${BASE_API_URL_PROD}/client/static/{name}_settings.json`,
+      `${BASE_API_URL_PROD}/client/static/{name}_settings.json`,
 };
