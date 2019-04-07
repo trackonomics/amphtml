@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/* URL of local environment */
 const BASE_API_URL_LOCAL = 'https://localmagiclinks.trackonomics.net';
 /** @const @enum {string} */
 export const LOCAL_ENV = {
@@ -21,6 +22,7 @@ export const LOCAL_ENV = {
       `${BASE_API_URL_LOCAL}/client/static/{name}_settings.json`,
 };
 
+/* URL of test environment */
 const BASE_API_URL_TEST = 'https://magiclinks2.trackonomics.net';
 /** @const @enum {string} */
 export const TEST_ENV = {
@@ -28,6 +30,7 @@ export const TEST_ENV = {
       `${BASE_API_URL_TEST}/client/static/{name}_settings.json`,
 };
 
+/* URL of prod environment */
 const BASE_API_URL_PROD = 'https://magiclinks.trackonomics.net';
 export const PROD_ENV = {
   SETTINGS_ENDPOINT:

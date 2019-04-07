@@ -1221,31 +1221,6 @@ export class FunnelRelay {
  * See https://developers.google.com/analytics/devguides/collection/analyticsjs/tracker-object-reference
  */
 export class GATracker {
-  /**
-   * @param {string} code
-   */
-  /*constructor(code, win, doc) {
-    this._win = win;
-    this._ampDoc = doc;
-    /!**
-     * Google Analytics code for current environment.
-     * If we can't get GA code from environment settings we keep this adapter
-     * as disabled.
-     *!/
-    /!*this.gaCode = code;
-    window.ga = window.ga || function() {
-      (window.ga.q = window.ga.q || []).push(arguments);
-    };
-    window.ga.l = Number(new Date);
-
-    window.ga('create', this.gaCode, 'auto', 'mlTracker', {
-      'alwaysSendReferrer': true,
-      'allowAnchor': false,
-    });
-    window.ga('mlTracker.set', 'referrer', document.referrer);
-    window.ga('mlTracker.set', 'appName', 'trackonomics-relay');*!/
-
-  }*/
 
   /**
    * Track event
@@ -1271,13 +1246,6 @@ export class GATracker {
       em.setAttribute('data-vars-value', eventValue);
       em.click();
     }
-
-    /*const target = this._win.document.createElement('div');
-    this._win.document.body.appendChild(target);
-    const service = new InstrumentationService(this._ampDoc);
-    service.triggerEventForTarget(target,
-        'click', {'event_category': 'programmatic'});*/
-
   }
 
   /**
@@ -1286,15 +1254,6 @@ export class GATracker {
    */
   trackPageView() {
     //todo
-    /*if (window.ga) {
-      window.ga(function() {
-        window.ga('mlTracker.set', 'page', location.href);
-        window.ga('mlTracker.send', 'pageview', {
-          page: location.href,
-          title: document.title,
-        });
-      });
-    }*/
   }
 
 }

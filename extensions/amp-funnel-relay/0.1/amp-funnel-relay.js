@@ -56,16 +56,6 @@ export class AmpFunnelRelay extends AMP.BaseElement {
     });
   }
 
-  /** @override */
-  preconnectCallback() {
-    //render funnel-relay script
-    /*const scriptEm = document.createElement('script');
-    scriptEm.src = this.element.getAttribute('src');
-    scriptEm.id = 'funnel-relay-installer';
-    scriptEm.setAttribute('async', '');
-    document.body.appendChild(scriptEm);*/
-  }
-
   /**
    * Load  funnel-relay settings
    * @return {*}
