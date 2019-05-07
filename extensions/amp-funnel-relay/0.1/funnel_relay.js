@@ -128,7 +128,7 @@ export class FunnelRelay {
     try {
       this._win = win;
       this._ampDoc = doc;
-      this._logPrefix = 'MagicLink:: ';
+      this._logPrefix = 'FunnelRelay:: ';
       this._loadTime = Date.now();
       this._links = [];
       this._report = {};
@@ -139,7 +139,8 @@ export class FunnelRelay {
       this.run();
 
     } catch (exp) {
-      console.error('Magic Links \'init\' procedure fail! Details: ' + exp);
+      console.error(
+          'FunnelRelay \'constructor\' procedure fail! Details: ' + exp);
       if (exp.stack) {
         console.error(exp.stack);
       }
