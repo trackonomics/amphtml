@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {FunnelRelay} from './funnel_relay';
+import {FunnelRelay} from './funnel_relay1';
 import {LOCAL_ENV, PROD_ENV, TEST_ENV} from './constants';
 import {Layout} from '../../../src/layout';
 import {Services} from '../../../src/services';

@@ -1,7 +1,4 @@
-/* do the magic here */
-//import {ENDPOINTS} from './constants';
-
-//export var trx = window.trx || {};
+/* funnel-relay version 1  - do the magic here */
 
 import {setStyle} from '../../../src/style';
 
@@ -38,6 +35,10 @@ export class FunnelRelay {
         'pj': false,
         'sl': false,
         'ir': false,
+        'td': false,
+        'wg': false,
+        'pt': false,
+        'dynamic': false,
       };
     }
     if (!(baseSettings.detection_rules.custom instanceof Array)) {
@@ -113,6 +114,9 @@ export class FunnelRelay {
         enabled: false,
         selectors: '',
       };
+    }
+    if (baseSettings.dynamic_domains == null) {
+      baseSettings['dynamic_domains'] = [];
     }
 
     return baseSettings;
@@ -592,6 +596,7 @@ export class FunnelRelay {
    */
   detectLinks_() {
     if (this.asBoolean_(this._settings.detection_rules.auto)) {
+      this.markDynamicDomainLinks_();
       this.autoDetectByUrl_();
     }
 
@@ -716,19 +721,34 @@ export class FunnelRelay {
         || url.indexOf('tkqlhce.com') !== -1
         || url.indexOf('dpbolvw.net') !== -1
         || url.indexOf('jqoqocy.com') !== -1
-        || url.indexOf('kqzfj.com') !== -1) {
+        || url.indexOf('kqzfj.com') !== -1
+        || url.indexOf('kqzyfj.com') !== -1
+        || url.indexOf('ftjcfx.com') !== -1
+        || url.indexOf('lduhtrp.net') !== -1) {
       return 'cj';
     } else if (url.indexOf('shareasale.com') !== -1) {
       return 'sas';
     } else if (url.indexOf('awin1.com') !== -1) {
       return 'awin';
-    } else if (url.indexOf('pepperjamnetwork.com') !== -1) {
+    } else if (url.indexOf('pepperjamnetwork.com') !== -1
+        || url.includes('pjtra.com/t/') || url.includes('gopjn.com/t/') ||
+        url.includes('pjatr.com/t/')
+        || url.includes('pntra.com/t/') || url.includes('pntrs.com/t/') ||
+        url.includes('pntrac.com/t/')) {
       return 'pj';
-    } else if (url.indexOf('go.redirectingat.com') !== -1 ||
-        url.indexOf('go.skimresources.com') !== -1) {
+    } else if (url.indexOf('go.redirectingat.com') !== -1) { // || url.indexOf("go.skimresources.com") !== -1
       return 'sl';
-    } else if (url.indexOf('/c/') !== -1) {
+    } else if (url.search(/\/c\/(\d+)\/(\d+)\//) !== -1) {
       return 'ir';
+    } else if (url.indexOf('track.webgains.com') !== -1) {
+      return 'wg';
+    } else if (url.indexOf('prf.hn/click') !== -1) {
+      return 'pt';
+    } else if (url.includes('tradedoubler.com/click?') ||
+        url.includes('pf.tradedoubler.com/pf/')) {
+      return 'td';
+    } else if (url.indexOf('trx=') !== -1) {
+      return 'dynamic';
     }
     return false;
   }
@@ -944,6 +964,16 @@ export class FunnelRelay {
           //search for 'clickref='
           queryParamToUse = 'clickref';
           break;
+        case 'td':
+          //search for 'epi('
+          queryParamToUse = 'epi(';
+          pathStyle = true;
+          break;
+        case 'pt':
+          //search for 'pubref:'
+          queryParamToUse = 'pubref:';
+          pathStyle = true;
+          break;
         case 'amazon':
           //search for 'ascsubtag='
           queryParamToUse = 'ascsubtag';
@@ -993,60 +1023,43 @@ export class FunnelRelay {
 
           currentVal = url.substring(inx1, inx2);
           if (currentVal.length > 0) {
-            appendValue = '|' + appendValue;
+            appendValue = this.getDelimiter_(url) + appendValue;
           }
           return this.insertToString_(url, appendValue, inx2);
 
         } else {
-          if (network === 'cj') {
-            const inx3 = url.indexOf('dlg/');
-            if (inx3 !== -1) {
-              appendValue = queryParamToUse + '/' + appendValue + '/';
-              return this.insertToString_(url, appendValue, inx3 + 4);
-            } else if (url.indexOf('?') === -1) {
-              //url does not have parameters. Add  ?sid=value
-              return url + '?sid=' + appendValue;
-            } else {
-              //url already have parameters prefix by ?
-
-              const inx11 = url.indexOf('?');
-              const inx12 = url.indexOf('sid=', inx11 + 1);
-              if (inx12 !== -1) {
-                //url already have "sid=" parameter
-                const inx13 = url.indexOf('&', inx12 + 4);
-                if (inx13 === -1) {
-                  //sid=xyz at the end of url
-                  return url + '|' + appendValue;
-                } else {
-                  appendValue = '|' + appendValue;
-                  return this.insertToString_(url, appendValue, inx13);
-                }
-              } else if (inx11 === url.length - 1) {
-                //url ends with "?"
-                return url + 'sid=' + appendValue;
-              } else {
-                //url does not have "sid=" parameter
-                return url + '&sid=' + appendValue;
-              }
-
-            }
-          } else {
-            appendValue = '/' + queryParamToUse + '/' + appendValue;
-            return this.insertToString_(url, appendValue, url.length);
+          if (network === 'pt') {
+            return this.appendNameValueToUrlPT_(url, name, value,
+                queryParamToUse, appendValue);
           }
+
+          if (network === 'cj') {
+            return this.appendNameValueToUrlCJ_(url, name, value,
+                queryParamToUse, appendValue);
+          }
+
+          if (network === 'td') {
+            return this.appendNameValueToUrlTD_(url, name, value,
+                queryParamToUse, appendValue);
+          }
+
+          appendValue = '/' + queryParamToUse + '/' + appendValue;
+          return this.insertToString_(url, appendValue, url.length);
         }
 
-      } else if ((inx1 = url.indexOf(queryParamToUse + '='))) {
+      } else {
         //attributes are saturated by "&"
+        inx1 = url.indexOf(queryParamToUse + '=');
         if (inx1 !== -1) {
           inx2 = url.indexOf('&', inx1);
           if (inx2 === -1) {
             inx2 = url.length;
           }
 
-          currentVal = url.substring(inx1 + queryParamToUse.length + 1, inx2);
+          currentVal = url.substring(inx1 + queryParamToUse.length + 1,
+              inx2);
           if (currentVal.length > 0) {
-            appendValue = '|' + appendValue;
+            appendValue = this.getDelimiter_(url) + appendValue;
           }
         } else {
           if (url.indexOf('?') !== -1) {
@@ -1078,6 +1091,132 @@ export class FunnelRelay {
   }
 
   /**
+   * Append name to URL in trade-doubler link
+   * @param {string} url
+   * @param {string} name
+   * @param {string} value
+   * @param {string} queryParamToUse
+   * @param {string} appendValue
+   * @return {string|*}
+   * @private
+   */
+  appendNameValueToUrlTD_(url, name, value, queryParamToUse, appendValue) {
+    let inx1, inx2, inx3, inx4, currentVal;
+    inx1 = url.indexOf('epi(');
+    if (inx1 !== -1) {
+      inx1 += (queryParamToUse).length;
+      inx2 = url.indexOf(')', inx1);
+      if (inx2 !== -1) {
+        currentVal = url.substring(inx1, inx2);
+        if (currentVal.length > 0) {
+          appendValue = this.getDelimiter_(url) + appendValue;
+        }
+        return this.insertToString_(url, appendValue, inx2);
+      }
+    } else {
+      //decide if this is link with brackets
+      inx1 = url.indexOf('url(');
+      if (inx1 !== -1) {
+        //yes append epi(data)
+        return url + 'epi(' + appendValue + ')';
+      } else {
+        //no append &epi=data
+        inx3 = url.indexOf('&epi=');
+        if (inx3 === -1) {
+          return url + '&epi=' + appendValue;
+        } else {
+          //append to existing data
+          inx4 = url.indexOf('&', inx3 + 5);
+          if (inx4 === -1) {
+            //epi=xyz at the end of url
+            return url + this.getDelimiter_(url) + appendValue;
+          } else {
+            appendValue = this.getDelimiter_(url) + appendValue;
+            return this.insertToString_(url, appendValue, inx4);
+          }
+        }
+      }
+    }
+    return url; //do not process link
+  }
+
+  /**
+   * Append name to URL in Partnerize link
+   * @param {string} url
+   * @param {string} name
+   * @param {string} value
+   * @param {string} queryParamToUse
+   * @param {string} appendValue
+   * @return {string|*}
+   * @private
+   */
+  appendNameValueToUrlPT_(url, name, value, queryParamToUse, appendValue) {
+    let inx1, inx2, currentVal;
+    inx1 = url.indexOf(queryParamToUse);
+    if (inx1 !== -1) {
+      inx1 += (queryParamToUse).length;
+      inx2 = url.indexOf('/', inx1);
+      if (inx2 !== -1) {
+        currentVal = url.substring(inx1, inx2);
+        if (currentVal.length > 0) {
+          appendValue = this.getDelimiter_(url) + appendValue;
+        }
+        return this.insertToString_(url, appendValue, inx2);
+      }
+    } else {
+      inx1 = url.indexOf('/destination');
+      if (inx1 !== -1) {
+        appendValue = '/pubref:' + appendValue;
+        return this.insertToString_(url, appendValue, inx1);
+      }
+    }
+    return url; //do not process link
+  }
+
+  /**
+   * Append parameter to CJ link
+   * @param {string} url
+   * @param {string} name
+   * @param {string} value
+   * @param {string} queryParamToUse
+   * @param {string} appendValue
+   * @return {string}
+   * @private
+   */
+  appendNameValueToUrlCJ_(url, name, value, queryParamToUse, appendValue) {
+    const inx3 = url.indexOf('dlg/');
+    if (inx3 !== -1) {
+      appendValue = queryParamToUse + '/' + appendValue + '/';
+      return this.insertToString_(url, appendValue, inx3 + 4);
+    } else if (url.indexOf('?') === -1) {
+      //url does not have parameters. Add  ?sid=value
+      return url + '?sid=' + appendValue;
+    } else {
+      //url already have parameters prefix by ?
+
+      const inx11 = url.indexOf('?');
+      const inx12 = url.indexOf('sid=', inx11 + 1);
+      if (inx12 !== -1) {
+        //url already have "sid=" parameter
+        const inx13 = url.indexOf('&', inx12 + 4);
+        if (inx13 === -1) {
+          //sid=xyz at the end of url
+          return url + this.getDelimiter_(url) + appendValue;
+        } else {
+          appendValue = this.getDelimiter_(url) + appendValue;
+          return this.insertToString_(url, appendValue, inx13);
+        }
+      } else if (inx11 === url.length - 1) {
+        //url ends with "?"
+        return url + 'sid=' + appendValue;
+      } else {
+        //url does not have "sid=" parameter
+        return url + '&sid=' + appendValue;
+      }
+    }
+  }
+
+  /**
    * If 'page_url_filter' is defined, check that page URL match the filter
    * @return {boolean}
    * @private
@@ -1089,22 +1228,6 @@ export class FunnelRelay {
     }
 
     return true;
-  }
-
-  /**
-   *
-   * @param {string} url
-   * @param {Object} properties
-   * @return {*}
-   * @private
-   */
-  appendToUrl_(url, properties) {
-    if (url.indexOf('?') !== -1) {
-      url += ('&' + encodeURIComponent(properties));
-    } else {
-      url += ('?' + encodeURIComponent(properties));
-    }
-    return url;
   }
 
   /**
@@ -1210,9 +1333,9 @@ export class FunnelRelay {
    * @private
    */
   generateUUID_() {
-    return String.fromCharCode(Math.floor((Math.random() * 10) + 97))
-        + Date.now()
-        + '-' + Math.floor((Math.random() * 1000000) + 1);
+    const d = Date.now();
+    const r = Math.floor((Math.random() * 1000000) + 1);
+    return `fr-${d}-${r}-fr`;
   }
 
 }
@@ -1226,16 +1349,10 @@ export class GATracker {
   /**
    * Track event
    *
-   * @param {string} eventCategory    text    yes    Typically the object that
-   *     was interacted with (e.g. 'Video')
-   * @param  {string} eventAction    text    yes    The type of interaction
-   *     (e.g.
-   *   'play')
-   * @param {string} eventLabel    text    no    Useful for categorizing events
-   *     (e.g.
-   *   'Fall Campaign')
-   * @param {*} eventValue    integer    no    A numeric value associated with
-   *     the event (e.g. 42)
+   * @param {string} eventCategory
+   * @param {string} eventAction
+   * @param {string} eventLabel
+   * @param {*} eventValue
    * @see https://developers.google.com/analytics/devguides/collection/analyticsjs/events
    */
   trackEvent(eventCategory, eventAction, eventLabel, eventValue) {
@@ -1254,8 +1371,65 @@ export class GATracker {
    *
    */
   trackPageView() {
-    //todo
+    //not supported
   }
 
+}
+
+/**
+ * Tracked to used with adobe Analytics
+ * @type {AdobeTracker}
+ * @see https://marketing.adobe.com/resources/help/en_US/sc/implement/function_tl.html
+ */
+export class AdobeTracker {
+  /**
+   * @param {string} code
+   */
+  constructor(code) {
+    if (code != null && code.length > 0) {
+      this._rsId = code;
+    } else {
+      this._rsId = null;
+    }
+  }
+
+  /**
+   * Track event
+   *
+   * @param {string} eventCategory
+   * @param {string} eventAction
+   * @param {string} eventLabel
+   * @param {*} eventValue
+   * @param {Object}  fieldsObject
+   * @see https://developers.google.com/analytics/devguides/collection/analyticsjs/events
+   */
+  trackEvent(eventCategory, eventAction, eventLabel, eventValue, fieldsObject) {
+    if (typeof window.s.tl == 'function') {
+      let tracker = window.s;
+      const rsId = this._rsId != null ? this._rsId : window.s_account;
+      if (rsId != null) {
+        tracker = window.s_gi(rsId);
+      }
+
+      tracker.linkTrackVars = 'prop1,prop2,prop3,prop4,prop5';
+      tracker.prop1 = fieldsObject.xid;
+      tracker.prop2 = fieldsObject.anchor.href;
+      tracker.prop3 = fieldsObject.anchor.innerHTML;
+      tracker.prop4 = document.referrer;
+      tracker.prop5 = '';
+      tracker.linkTrackEvents = 'funnel-relay';
+      tracker.events = 'funnel-relay';
+      const str = 'funnel-relay-' + fieldsObject.xid;
+      tracker.tl(true, 'o', str, null);
+    }
+  }
+
+  /**
+   * Track page view
+   *
+   */
+  trackPageView() {
+    //not supported
+  }
 }
 

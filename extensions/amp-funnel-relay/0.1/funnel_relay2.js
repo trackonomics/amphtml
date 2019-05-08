@@ -1,21 +1,24 @@
 /* funnel-relay version 2  - do the magic here */
 
+import {setStyle} from '../../../src/style';
+
 export class FunnelRelay {
 
   /**
-   * Check the settings and add missing attributes if some corruption
-   * occur to settings or when new settings are added.
+   * Check the settings and add missing attributes if some corruption occur to
+   * settings or when new settings are added.
    *
+   * @param {*} baseSettings
    * @public
    * @static
    */
   static prepareDefaultSettings(baseSettings) {
     if (typeof baseSettings.detection_rules !== 'object') {
-      baseSettings.detection_rules = {
-        auto: true,
-        custom: [],
-        exclude_urls: [],
-        page_url_filter: '',
+      baseSettings['detection_rules'] = {
+        'auto': true,
+        'custom': [],
+        'exclude_urls': [],
+        'page_url_filter': '',
       };
     }
 
@@ -119,67 +122,40 @@ export class FunnelRelay {
     return baseSettings;
   }
 
-  constructor(autoRun) {
-    try {
-      if (autoRun == null) {
-        autoRun = true;
-      }
-      if (env == null) {
-        env = 'prod';
-      }
-
-      this._paramsBuffer = {};
-      this._autoRun = autoRun;
-      this.init(autoRun);
-    } catch (e) {
-      this.error_(e, e.stack);
-    }
-  }
-
   /**
-   * Initialize script settings
+   * Construct and run
+   * @param {Object} settings
+   * @param {*} win
+   * @param {*} doc
    */
-  init() {
+  constructor(settings, win, doc) {
     try {
-      this._onPageSettings = trx.magic_links_settings || {};
-
-      //@formatter:off
-                    this._envSettings = {ENV_SETTINGS_PLACEHOLDER: null}; //do not change this token.
-                    //@formatter:on
-
-      //@formatter:off
-                    this._serverSettings = {SETTINGS_PLACEHOLDER: null}; //do not change this token.
-                    //@formatter:on
-
-      if (this._envSettings['events_recording_env'] == null) {
-        this._envSettings['events_recording_env'] = 'prod';
-      }
+      this._win = win;
+      this._ampDoc = doc;
       this._delimiter1 = '|';
       this._delimiter2 = '~';
       this._uuid = this.generateUUID_();
-      this._trxEqUuid = 'trx=' + this._uuid; //special token we use to
-                                             // mark dynamic links prior
-                                             // to click
+
+      //special token we use to mark dynamic links prior to click
+      this._trxEqUuid = 'trx=' + this._uuid;
       this._trxEqUuidOld = this._trxEqUuid;
       this._logPrefix = 'FunnelRelay:: ';
       this._loadTime = Date.now();
       this._links = [];
       this._report = {};
-      this._exclude_urls_regex = [];
+      this._excludeUrlsRegex = [];
       this._scriptEm = document.getElementById('funnel-relay-installer');
       if (this._scriptEm == null) {
         return;
       }
 
-      this.prepareSettings_();
+      this.prepareSettings_(settings);
       this.prepareExcludeRegExp_();
-      if (this._autoRun) {
-        this.run();
-      }
+      this.run();
 
     } catch (exp) {
       console.error(
-          'Magic Links \'init\' procedure fail! Details: ' + exp);
+          'FunnelRelay \'constructor\' procedure fail! Details: ' + exp);
       if (exp.stack) {
         console.error(exp.stack);
       }
@@ -187,88 +163,56 @@ export class FunnelRelay {
   }
 
   /**
-   * Get on-page settings
-   * @return {*|{}}
-   * @public
-   */
-  get onPageSettings() {
-    return this._onPageSettings;
-  }
-
-  /**
-   * Get server settings. If not set return empty object.
-   * @return {*|{}}
-   * @public
-   */
-  get serverSettings() {
-    if (this._serverSettings.hasOwnProperty('SETTINGS_PLACEHOLDER')) {
-      return {};
-    } else {
-      return this._serverSettings;
-    }
-  }
-
-  /**
-   * Get the buffer used to collect parameters to send with affiliate
-   * link.
-   * @return {{}}
-   */
-  get paramsBuffer() {
-    return this._paramsBuffer;
-  }
-
-  /**
    *
-   * @param {String} mlId
-   * @param event
+   * @param {string} mlId
+   * @param {*} event
    */
   static renderLinkPreview(mlId, event) {
-    let imgEm = document.querySelector(
-        'iframe[data-ml-preview="' + mlId + '"]');
+    let str = `iframe[data-ml-preview="${mlId}"]`;
+    const imgEm = document.querySelector(str);
     if (imgEm != null) {
       imgEm.parentNode.removeChild(imgEm);
       return;
     }
 
-    let anchor = document.querySelector('a[data-ml-id="' + mlId + '"]');
+    str = `a[data-ml-id="${mlId}"]`;
+    const anchor = document.querySelector(str);
     if (anchor != null) {
-      let iframeEm = document.createElement('iframe');
+      const iframeEm = document.createElement('iframe');
       iframeEm.setAttribute('data-ml-preview', mlId);
       iframeEm.setAttribute('scrolling', 'no');
       iframeEm.setAttribute('frameborder', '0');
-      iframeEm.style.borderStyle = 'solid';
-      iframeEm.style.borderWidth = '2px';
-      iframeEm.style.borderColor = 'grey';
-      iframeEm.style.borderRadius = '3px';
-      iframeEm.style.position = 'absolute';
-      iframeEm.style.width = '120px';
-      iframeEm.style.height = '90px';
-      iframeEm.style.background = '#fff';
+      setStyle(iframeEm, 'borderStyle', 'solid');
+      setStyle(iframeEm, 'borderWidth', 2, 'px');
+      setStyle(iframeEm, 'borderColor', 'grey');
+      setStyle(iframeEm, 'borderRadius', 3, 'px');
+      setStyle(iframeEm, 'position', 'absolute');
+      setStyle(iframeEm, 'width', 120, 'px');
+      setStyle(iframeEm, 'height', 90, 'px');
+      setStyle(iframeEm, 'background', '#fff');
 
-      let docElem = document.documentElement;
-      let box = anchor.getBoundingClientRect();
-      iframeEm.style.top = box.top +
-          (window.pageYOffset - docElem.clientTop) - 100 + 'px';
-      iframeEm.style.left = box.left +
-          (window.pageXOffset - docElem.clientLeft) + (box.width - 60) +
-          'px';
+      const docElem = document.documentElement;
+      const box = anchor.getBoundingClientRect();
+      setStyle(iframeEm, 'top', box.top
+          + (window.pageYOffset - docElem.clientTop) - 100, 'px');
+      setStyle(iframeEm, 'left', box.left +
+          (window.pageXOffset - docElem.clientLeft) + (box.width - 60), 'px');
 
       document.body.appendChild(iframeEm);
 
-      let iframeDoc = (iframeEm.contentWindow ||
-          iframeEm.contentDocument);
+      let iframeDoc = (iframeEm.contentWindow || iframeEm.contentDocument);
       if (iframeDoc.document) {
         iframeDoc = iframeDoc.document;
       }
 
-      let imgEm = iframeDoc.createElement('img');
-      let url = 'http://images.shrinktheweb.com/xino.php?stwembed=1&stwaccesskeyid=4abc115f8a632c5&stwsize=120x90&stwurl=' +
+      const imgEm = iframeDoc.createElement('img');
+      const url = 'http://images.shrinktheweb.com/xino.php?stwembed=1&stwaccesskeyid=4abc115f8a632c5&stwsize=120x90&stwurl=' +
           anchor.href;
       imgEm.setAttribute('src', url);
-      imgEm.style.width = '100%';
-      imgEm.style.height = 'auto';
+      setStyle(imgEm, 'width', '100', '%');
+      setStyle(imgEm, 'height', 'auto');
       iframeDoc.body.appendChild(imgEm);
-      iframeDoc.body.style.padding = '1px';
+      setStyle(iframeDoc.body, 'padding', 1, 'px');
     }
 
     event.stopImmediatePropagation();
@@ -277,26 +221,26 @@ export class FunnelRelay {
   /**
    * Run eh features
    *
-   * @param {boolean}[reset] reset When working with simulator we want to
-   *     reset the links before apply the ML logic again.
+   * @param {boolean}[reset] reset When working with simulator we want to reset
+   *   the links before apply the ML logic again.
    */
   run(reset) {
     try {
       if (!this._scriptEm.hasAttribute('data-property-id')
           || !this._scriptEm.hasAttribute('data-customer-id')
-          ||
-          this.isEmpty_(this._scriptEm.hasAttribute('data-property-id'))
-          ||
-          this.isEmpty_(this._scriptEm.hasAttribute('data-customer-id'))
+          || this.isEmpty_(this._scriptEm.hasAttribute('data-property-id'))
+          || this.isEmpty_(this._scriptEm.hasAttribute('data-customer-id'))
       ) {
         this.log_(
-            'Missing one of the mandatory script attributes \'data-customer-id\' and/or \'data-property-id\'');
+            'Missing one of the mandatory script attributes' +
+            ' \'data-customer-id\' and/or \'data-property-id\'');
         return;
       }
 
       if (this.isEmpty_(this._envSettings.events_recording_api)) {
         this.log_(
-            'Missing environment settings. Check that you setup $ENV_SETTINGS in my.cfg.php and that \'events_recording_api\' is set there!');
+            'Missing environment settings. Check that you setup $ENV_SETTINGS' +
+            ' in my.cfg.php and that \'events_recording_api\' is set there!');
         return;
       }
 
@@ -308,12 +252,12 @@ export class FunnelRelay {
       //find links to manipulate
       this.detectLinks_();
 
-      //reset the link url to original state.Used when working with
-      // simulator to prevent multiple append of link parameters.
+      //reset the link url to original state.Used when working with simulator
+      // to prevent multiple append of link parameters.
       if (reset === true && this._links.length > 0) {
         for (let i = 0; i < this._links.length; i++) {
-          let item = this._links[i];
-          let origUrl = item.anchor.getAttribute('data-orig-url');
+          const item = this._links[i];
+          const origUrl = item.anchor.getAttribute('data-orig-url');
           if (!this.isEmpty_(origUrl)) {
             item.anchor.href = origUrl;
           }
@@ -326,14 +270,13 @@ export class FunnelRelay {
       }
 
       //is specified prepare and send report data to listeners
-      if (scriptEm != null) {
-        if (scriptEm.getAttribute('data-report') === 'true') {
+      if (this._scriptEm != null) {
+        if (this._scriptEm.getAttribute('data-report') === 'true') {
           this.postReport_();
         }
       }
     } catch (exp) {
-      console.error(
-          'Magic Links \'run\' procedure fail! Details: ' + exp);
+      console.error('Funnel Relay \'run\' procedure fail! Details: ' + exp);
       if (exp.stack) {
         console.error(exp.stack);
       }
@@ -368,10 +311,10 @@ export class FunnelRelay {
     this._paramsBuffer['event_type'] = 'click';
 
     //now apply features and add features data to params buffer
-    let obj = this._settings.features;
-    for (let featureId in obj) {
+    const obj = this._settings.features;
+    for (const featureId in obj) {
       if (obj.hasOwnProperty(featureId)) {
-        let options = obj[featureId];
+        const options = obj[featureId];
         if (!this.asBoolean_(options['enabled'])) {
           continue;
         }
@@ -408,13 +351,19 @@ export class FunnelRelay {
     //for each of the detected link register event that prepare the URL
     // with added parameters, when user click the link
     for (let i = 0; i < this._links.length; i++) {
-      let link = this._links[i];
+      const link = this._links[i];
       link.anchor.removeEventListener('click', this.linkClicked_);
       link.anchor.addEventListener('click',
           this.linkClicked_.bind(this, link));
     }
   }
 
+  /**
+   * Handle the click event
+   * @param {Element} link
+   * @param {Event} event
+   * @private
+   */
   linkClicked_(link, event) {
     this.prepareAffiliateLink_(event.currentTarget, link.network);
     if (event) {
@@ -425,14 +374,13 @@ export class FunnelRelay {
   /**
    * Appen referrer to the link
    *
-   * @param options
+   * @param {Object} options
    * @private
    */
   appendReferrer_(options) {
     if (this.asBoolean_(options.enabled)) {
-      let attrName = options.attr_name;
-      let newQueryParam = this.asBoolean_(options.new_query_param);
-      let referrer = document.referrer;
+      const attrName = options.attr_name;
+      let {referrer} = document;
       if (referrer.charAt(referrer.length - 1) === '/') {
         referrer = referrer.substring(0, referrer.length - 1);
       }
@@ -443,16 +391,12 @@ export class FunnelRelay {
   /**
    * Appen timind properties to the link.
    *
-   * @param options
+   * @param {Object} options
    * @private
    */
   appendTiming_(options) {
     if (this.asBoolean_(options.enabled)) {
-      let newQueryParam = this.asBoolean_(options.new_query_param);
-      let recordLoad = options.t_load;
-      let recordClicked = options.t_clicked;
-      let recordToClick = options.t_toclick;
-      if (recordLoad) {
+      if (options['t_load']) {
         this._paramsBuffer['t_loaded'] = this._loadTime;
       }
     }
@@ -461,17 +405,16 @@ export class FunnelRelay {
   /**
    * Append custom static attributes to affiliate link.
    *
-   * @param options
+   * @param {Object} options
    * @private
    */
   appendAttributes_(options) {
     if (this.asBoolean_(options.enabled)
         && !this.isEmpty_(options.attributes) > 0) {
 
-      let params = this.parseQuery_(options.attributes);
-      params.forEach((value, key, map) => {
+      const params = this.parseQuery_(options.attributes);
+      params.forEach((value, key) => {
         for (let i = 0; i < this._links.length; i++) {
-          let item = this._links[i];
           this._paramsBuffer[key] = value;
         }
       });
@@ -482,7 +425,7 @@ export class FunnelRelay {
    * Attributes forwarding takes attributes from page query and forward
    * to affiliate link
    *
-   * @param options
+   * @param {Object} options
    * @private
    */
   attributesForwarding_(options) {
@@ -490,10 +433,10 @@ export class FunnelRelay {
         && options.attributes instanceof Array
         && options.attributes.length > 0) {
 
-      let str = location.search;
+      const str = location.search;
       if (!this.isEmpty_(str) && str.length > 1) {
-        let params = this.parseQuery_(str.substring(1));
-        params.forEach((value, key, map) => {
+        const params = this.parseQuery_(str.substring(1));
+        params.forEach((value, key) => {
           if (options.attributes.includes(key)) {
             this._paramsBuffer[key] = value;
           }
@@ -504,17 +447,18 @@ export class FunnelRelay {
 
   /**
    *
-   * @param options
+   * @param {Object} options
    * @private
    */
   prepareEventTracking_(options) {
     if (this.asBoolean_(options.enabled)) {
 
-      if (!this.isEmpty_(options.analytics_code) && typeof ga !==
+      if (!this.isEmpty_(options.analytics_code) &&
+          options.analytics_code.indexOf('UA-') === 0 && typeof ga !==
           'undefined') {
-        this.trackerObj = new trx.GATracker(options.analytics_code);
-      } else if (s != null && typeof s.tl == 'function') {
-        this.trackerObj = new trx.AdobeTracker(options.analytics_code);
+        this.trackerObj = new GATracker(options.analytics_code);
+      } else if (window.s != null && typeof window.s.tl == 'function') {
+        this.trackerObj = new AdobeTracker(options.analytics_code);
       } else {
         return;
       }
@@ -524,15 +468,15 @@ export class FunnelRelay {
       }
       if (this.asBoolean_(options.clicks)) {
         for (let i = 0; i < this._links.length; i++) {
-          let item = this._links[i];
-          let anchor = item.anchor;
+          const item = this._links[i];
+          const {anchor} = item;
           anchor.addEventListener('click', () => {
-            let label = this.getAnchorLabel_(anchor, 50) + ' [' +
+            const label = this.getAnchorLabel_(anchor, 50) + ' [' +
                 anchor.href + ']';
             this.trackerObj.trackEvent('magic-links', 'click', label, '1',
                 {
                   xid: this._uuid,
-                  anchor: anchor,
+                  anchor,
                 });
           });
           this.markLink_('feature', 'track_events', anchor);
@@ -543,7 +487,7 @@ export class FunnelRelay {
 
   /**
    *
-   * @param options
+   * @param {Object} options
    * @private
    */
   autoOptimizeLinks_(options) {
@@ -553,23 +497,22 @@ export class FunnelRelay {
   }
 
   /**
-   * Prepare links to show icon of target page using shrink the web
-   * service.
+   * Prepare links to show icon of target page using shrink the web service.
    *
-   * @param options
+   * @param {Object} options
    * @private
    */
   preparePreview_(options) {
     if (this.asBoolean_(options.enabled)) {
       if (options.show_icon) {
         for (let i = 0; i < this._links.length; i++) {
-          let item = this._links[i];
-          let anchor = item.anchor;
-          let handleEm = document.createElement('span');
-          handleEm.style.cursor = 'pointer';
+          const item = this._links[i];
+          const {anchor} = item;
+          const handleEm = document.createElement('span');
+          setStyle(handleEm, 'cursor', 'pointer');
           handleEm.innerHTML = '&nearr;';
           handleEm.addEventListener('click',
-              trx.MagicLinks.renderLinkPreview.bind(this,
+              FunnelRelay.renderLinkPreview.bind(this,
                   anchor.getAttribute('data-ml-id')));
           anchor.insertAdjacentElement('afterend', handleEm);
           this.markLink_('feature', 'preview', anchor);
@@ -587,17 +530,18 @@ export class FunnelRelay {
   /**
    * Check is metadata selectors are defined and collect for defined
    * selectors.
-   * @param options
+   * @param {Object} options
+   * options
    * @private
    */
   prepareMetadata_(options) {
     if (!this.isEmpty_(options.selectors)) {
       let attrName, path, pathResult;
-      let lines = options.selectors.split('\n');
+      const lines = options.selectors.split('\n');
       for (let i = 0; i < lines.length; i++) {
         try {
-          let line = lines[i];
-          let arr = line.split('|');
+          const line = lines[i];
+          const arr = line.split('|');
           if (arr.length > 1) {
             attrName = arr[0].trim();
             path = arr[1].trim();
@@ -609,7 +553,7 @@ export class FunnelRelay {
               pathResult = this.getObjectByPath_(
                   path.replace('js::', ''));
             } else if (typeof document.evaluate === 'function') {
-              let result = document.evaluate(path, document, null,
+              const result = document.evaluate(path, document, null,
                   XPathResult.STRING_TYPE, null);
               pathResult = result.stringValue;
             }
@@ -618,7 +562,8 @@ export class FunnelRelay {
             }
           } else {
             this.log_(
-                'Invalid metadata line. Line must have name and Xpath value in this format: name | xpath ');
+                'Invalid metadata line. Line must have name and Xpath ' +
+                'value in this format: name | xpath ');
           }
         } catch (e) {
           this.log_(e);
@@ -638,7 +583,8 @@ export class FunnelRelay {
       this.autoDetectByUrl_();
     }
 
-    for (let options  of this._settings.detection_rules.custom) {
+    for (let i = 0; i < this._settings.detection_rules.custom.length; i++) {
+      const options = this._settings.detection_rules.custom[i];
       switch (options.type) {
         case 'url':
           this.detectByUrlToken_(options);
@@ -650,9 +596,9 @@ export class FunnelRelay {
     }
 
     for (let i = 0; i < this._links.length; i++) {
-      let item = this._links[i];
+      const item = this._links[i];
       item.anchor.setAttribute('data-ml-id', i);
-      item.anchor.setAttribute('data-ml', 'true');
+      item.anchor.setAttribute('data-ml', 'true'); //todo is this required
     }
   }
 
@@ -662,16 +608,16 @@ export class FunnelRelay {
    */
   autoDetectByUrl_() {
     let url, network;
-    let settings = this._settings.detection_rules.auto_networks;
+    const settings = this._settings.detection_rules.auto_networks;
 
     for (let i = 0; i < document.links.length; i++) {
-      let link = document.links[i];
+      const link = document.links[i];
       url = link.href;
       if (this.isAbsolute_(url) && !this.isEmpty_(url) &&
           !this.isExcludedUrl_(url)) {
         network = this.detectKnownAffiliateLink_(url);
         if (network !== false && this.asBoolean_(settings[network])) {
-          this._links.push({network: network, anchor: link});
+          this._links.push({network, anchor: link});
           if (!link.hasAttribute('data-orig-url')) {
             link.setAttribute('data-orig-url', url);
           }
@@ -684,24 +630,24 @@ export class FunnelRelay {
   /**
    * Detect links by given url token.
    *
-   * @param options
+   * @param {Object} options
    * @private
    */
   detectByUrlToken_(options) {
     let url, network;
 
     for (let i = 0; i < document.links.length; i++) {
-      let link = document.links[i];
+      const link = document.links[i];
       url = link.href;
       if (this.isAbsolute_(url) && !this.isEmpty_(url) &&
           !this.isExcludedUrl_(url)) {
-        let regexp = new RegExp(options.pattern);
+        const regexp = new RegExp(options.pattern);
         if (regexp.test(url)) {
           network = this.detectKnownAffiliateLink_(url);
           if (network === false) {
             network = 'other';
           }
-          this._links.push({network: network, anchor: link});
+          this._links.push({network, anchor: link});
           if (!link.hasAttribute('data-orig-url')) {
             link.setAttribute('data-orig-url', url);
           }
@@ -713,24 +659,24 @@ export class FunnelRelay {
   /**
    * Detect links by element selector.
    *
-   * @param options
+   * @param {Object} options
    * @private
    */
   detectByElementSelector_(options) {
     let url, network;
-    let links = document.querySelectorAll(options.selector);
-    links.forEach((link) => {
+    const links = document.querySelectorAll(options.selector);
+    links.forEach(link => {
       if (link.nodeName === 'A') {
         url = link.href;
         if (this.isAbsolute_(url) && !this.isEmpty_(url) &&
             !this.isExcludedUrl_(url)) {
-          let regexp = new RegExp(options.pattern);
+          const regexp = new RegExp(options.pattern);
           if (regexp.test(url)) {
             network = this.detectKnownAffiliateLink_(url);
             if (network === false) {
               network = 'other';
             }
-            this._links.push({network: network, anchor: link});
+            this._links.push({network, anchor: link});
             if (!link.hasAttribute('data-orig-url')) {
               link.setAttribute('data-orig-url', url);
             }
@@ -742,13 +688,11 @@ export class FunnelRelay {
 
   /**
    * Detect affiliate links by structure and move to corresponding buffer.
-   *
-   * @param url
-   * @param textNumber
-   * @param linksBuffer
-   * @param metadata
+   * @param {string} url
+   * @return {*}
+   * @private
    */
-  detectKnownAffiliateLink_(url, textNumber, linksBuffer, metadata) {
+  detectKnownAffiliateLink_(url) {
 
     if (url.indexOf('/dp/') !== -1 && url.includes('tag=') &&
         url.includes('amazon.')) {
@@ -799,12 +743,12 @@ export class FunnelRelay {
    * @private
    */
   markDynamicDomainLinks_() {
-    let inx1, url;
-    let domains = this._settings.dynamic_domains;
+    let inx1;
+    const domains = this._settings.dynamic_domains;
     if (domains != null) {
       for (let i = 0; i < document.links.length; i++) {
         try {
-          let link = document.links[i];
+          const link = document.links[i];
           let domain = link.hostname;
           domain = domain.replace('www.', '');
           if (domains.includes(domain)) {
@@ -832,40 +776,17 @@ export class FunnelRelay {
   /**
    * Check if url need to be excluded and not being analyzed.
    *
-   * @param url
+   * @param {string} url
    * @private
    */
   isExcludedUrl_(url) {
-    let excludeRegs = this._exclude_urls_regex;
+    const excludeRegs = this._excludeUrlsRegex;
     for (let i = 0; i < excludeRegs.length; i++) {
       if (excludeRegs.test(url)) {
         return true;
       }
     }
     return false;
-  }
-
-  /**
-   * 1. Load on-page settings if found.
-   * 2. Complete missing settings by running prepareDefaultSettings()
-   * 3. Merge with settings loaded from server
-   *
-   * @private
-   */
-  prepareSettings_() {
-    this._settings = FunnelRelay.prepareDefaultSettings({});
-
-    //merge with settings set on
-    if (Object.keys(this.serverSettings).length > 0) {
-      this._settings = this.extendForte_(this._settings,
-          this.serverSettings);
-    }
-
-    //Get on-page settings and add missing settings if require
-    if (Object.keys(this.onPageSettings).length > 0) {
-      this._settings = this.extendForte_(this._settings,
-          this.onPageSettings);
-    }
   }
 
   /**
@@ -876,8 +797,8 @@ export class FunnelRelay {
    * 2. Build the parameters string
    * 3. Append parameters to URL of clicked anchor.
    *
-   * @param anchor
-   * @param network
+   * @param {string} anchor
+   * @param  {string} network
    * @private
    */
   prepareAffiliateLink_(anchor, network) {
@@ -888,7 +809,7 @@ export class FunnelRelay {
 
         //we may need to cleanup older xid set on link
         if (this._olderUuid != null) {
-          let oldCidToken = 'xid:' + this._olderUuid;
+          const oldCidToken = 'xid:' + this._olderUuid;
           //in the case it append to link path
           anchor.href = anchor.href.replace('%7C' + oldCidToken, '');
 
@@ -922,11 +843,11 @@ export class FunnelRelay {
    * @private
    */
   collectClickTimeParams_() {
-    let options = this._settings.features['append_timing'];
+    const options = this._settings.features['append_timing'];
     if (this.asBoolean_(options.enabled)) {
-      let recordClicked = options.t_clicked;
-      let recordToClick = options.t_toclick;
-      let now = Date.now();
+      const {'t_clicked': recordClicked, 't_toclick': recordToClick} = options;
+
+      const now = Date.now();
       if (recordClicked) {
         this._paramsBuffer['t_clicked'] = this._loadTime;
       }
@@ -946,7 +867,7 @@ export class FunnelRelay {
     //set per/click values. Values per/click are not define in
     // runFeatures_()
     this._paramsBuffer['client_time'] = new Date().toISOString();
-    let payload = encodeURIComponent(JSON.stringify(this._paramsBuffer));
+    const payload = encodeURIComponent(JSON.stringify(this._paramsBuffer));
 
     if (this._scriptEm.hasAttribute('data-simulator')) {
       this.log_(
@@ -954,8 +875,8 @@ export class FunnelRelay {
           decodeURIComponent(payload));
     }
 
-    let apiUrl = this._envSettings.events_recording_api + '/write';
-    let body = {
+    const apiUrl = this._envSettings.events_recording_api + '/write';
+    const body = {
       'env': this._envSettings['events_recording_env'],
       'id': this._paramsBuffer['uuid'],
       'app_key': this._envSettings.app_key,
@@ -979,10 +900,10 @@ export class FunnelRelay {
       redirect: 'follow',
       referrer: '*client',
       keepalive: true, //Fetch with the keepalive flag is a replacement
-                       // for the Navigator.sendBeacon() API.
+      // for the Navigator.sendBeacon() API.
       body: JSON.stringify(body), // body data type must match
-                                  // "Content-Type" header
-    }).then((response) => {
+      // "Content-Type" header
+    }).then(response => {
       if (!response.ok) {
         this.log_('Fail to write event data. HTTP error, status = ' +
             response.status);
@@ -990,7 +911,7 @@ export class FunnelRelay {
       } else {
         return Promise.resolve({});
       }
-    }).then((response) => {
+    }).then(response => {
       //if we have error message print it
       if (response.message) {
         this.log_(response.message);
@@ -999,9 +920,27 @@ export class FunnelRelay {
   }
 
   /**
+   * 1. Load on-page settings if found.
+   * 2. Complete missing settings by running prepareDefaultSettings()
+   * 3. Merge with settings loaded from server
+   *
+   * @param {Object} settings
+   * @private
+   */
+  prepareSettings_(settings) {
+    this._settings = FunnelRelay.prepareDefaultSettings({});
+    this._settings = this.extendForte_(this._settings, settings);
+
+    this._envSettings = settings['env_settings']; //todo get env settings
+    if (this._envSettings['events_recording_env'] == null) {
+      this._envSettings['events_recording_env'] = 'prod';
+    }
+  }
+
+  /**
    * Write log message to console.
    *
-   * @param message
+   * @param {string} message
    * @private
    */
   log_(message) {
@@ -1011,8 +950,8 @@ export class FunnelRelay {
   /**
    * Write error message to console.
    *
-   * @param message
-   * @param stack
+   * @param {string} message
+   * @param {*} stack
    * @private
    */
   error_(message, stack) {
@@ -1028,11 +967,11 @@ export class FunnelRelay {
    * @private
    */
   prepareExcludeRegExp_() {
-    this._exclude_urls_regex = [];
-    let excludes = this._settings.detection_rules.exclude_urls;
+    this._excludeUrlsRegex = [];
+    const excludes = this._settings.detection_rules.exclude_urls;
     if (excludes.length > 0) {
       for (let i = 0; i < excludes.length; i++) {
-        this._exclude_urls_regex = new RegExp(excludes[i], 'i');
+        this._excludeUrlsRegex = new RegExp(excludes[i], 'i');
       }
     }
   }
@@ -1040,43 +979,42 @@ export class FunnelRelay {
   /**
    * Extend obj1 with he content of obj2, using deep copy.
    *
-   * @param obj1
-   * @param obj2
+   * @param {Object} obj1
+   * @param {Object} obj2
    * @return {{}}
    */
   extendForte_(obj1, obj2) {
     if (obj1 == null || obj2 == null) {
-      throw  'Null object provided to extendForte!';
+      throw new Error('Null object provided to extendForte!');
     }
     const result = {};
     let key;
-    for (key in obj1) {
-      if (obj1.hasOwnProperty(key)) {
-        let val1 = obj1[key];
-        const val2 = obj2[key];
-        if (val1 != null && val2 != null) {
-          if (val1 instanceof Array) {
-            result[key] = val2; //in the case of array override
-          } else if (typeof val1 === 'object') {
-            result[key] = this.extendForte_(val1, val2);
-          } else {
-            result[key] = val2;
-          }
-        } else if (val1 == null) {
-          result[key] = val2;
-        } else if (val2 == null) {
-          result[key] = val1;
+    let keys = Object.keys(obj1);
+    for (let i = 0; i < keys.length; i++) {
+      key = keys[i];
+      const val1 = obj1[key];
+      const val2 = obj2[key];
+      if (val1 != null && val2 != null) {
+        if (val1 instanceof Array) {
+          result[key] = val2; //in the case of array override
+        } else if (typeof val1 === 'object') {
+          result[key] = this.extendForte_(val1, val2);
         } else {
-          result[key] = null;
+          result[key] = val2;
         }
-
+      } else if (val1 == null) {
+        result[key] = val2;
+      } else if (val2 == null) {
+        result[key] = val1;
+      } else {
+        result[key] = null;
       }
     }
-    for (key in obj2) {
-      if (obj2.hasOwnProperty(key)) {
-        if (!(key in obj1) || obj1[key] == null) {
-          result[key] = obj2[key];
-        }
+    keys = Object.keys(obj2);
+    for (let i = 0; i < keys.length; i++) {
+      key = keys[i];
+      if (!(key in obj1) || obj1[key] == null) {
+        result[key] = obj2[key];
       }
     }
     return result;
@@ -1094,12 +1032,12 @@ export class FunnelRelay {
     };
 
     for (let i = 0; i < this._links.length; i++) {
-      let anchor = this._links[i].anchor;
-      let label = this.getAnchorLabel_(anchor, 100);
+      const {anchor} = this._links[i];
+      const label = this.getAnchorLabel_(anchor, 100);
       this._report.links.push({
         network: this._links[i].network,
         url: anchor.href,
-        label: label,
+        label,
       });
     }
 
@@ -1113,9 +1051,9 @@ export class FunnelRelay {
   /**
    * Add mark to link so we know that it was manipulated.
    *
-   * @param type
-   * @param value
-   * @param anchor
+   * @param {string} type
+   * @param {string} value
+   * @param {string} anchor
    * @private
    */
   markLink_(type, value, anchor) {
@@ -1133,9 +1071,9 @@ export class FunnelRelay {
    * parameter for extra info, create one according to link type, and set
    * it correctly in the url.
    *
-   * @param {String} network
-   * @param {String} url
-   * @param {String} name
+   * @param {string} network
+   * @param {string} url
+   * @param {string} name
    * @param {*} value
    * @param {boolean} forceNewQueryParams set true to ignore searching
    *     for known extra info param, and force the 'name' as new query
@@ -1212,20 +1150,19 @@ export class FunnelRelay {
    * the new value with pipe delimiter. Else set new attribute in the url
    * string.
    *
-   * @param {String} url
-   * @param {String} name
-   * @param {String} value Note! we run encodeURIComponent inside no need
+   * @param {string} url
+   * @param {string} name
+   * @param {string} value Note! we run encodeURIComponent inside no need
    *     to encode the value
-   * @param {String} queryParamToUse  the query parameter for setting the
+   * @param {string} queryParamToUse  the query parameter for setting the
    *     value. If not specified use the 'name' as new query parameter
    * @param {boolean} pathStyle if true the name value will be added to
    *     path. Else they will be added as query parameter
-   * @param {String} network
+   * @param {string} network
    * @private
    */
-  appendNameValueToUrl_(
-      url, name, value, queryParamToUse, pathStyle, network) {
-    let inx1, inx2, inx3, attr, appendValue, currentVal;
+  appendNameValueToUrl_(url, name, value, queryParamToUse, pathStyle, network) {
+    let inx1, inx2, appendValue, currentVal;
     value = encodeURIComponent(value);
 
     if (queryParamToUse != null) {
@@ -1250,17 +1187,17 @@ export class FunnelRelay {
 
         } else {
           if (network === 'pt') {
-            return this.appendNameValueToUrl_PT_(url, name, value,
+            return this.appendNameValueToUrlPT_(url, name, value,
                 queryParamToUse, appendValue);
           }
 
           if (network === 'cj') {
-            return this.appendNameValueToUrl_CJ_(url, name, value,
+            return this.appendNameValueToUrlCJ_(url, name, value,
                 queryParamToUse, appendValue);
           }
 
           if (network === 'td') {
-            return this.appendNameValueToUrl_TD_(url, name, value,
+            return this.appendNameValueToUrlTD_(url, name, value,
                 queryParamToUse, appendValue);
           }
 
@@ -1311,8 +1248,17 @@ export class FunnelRelay {
     return url;
   }
 
-  appendNameValueToUrl_TD_(
-      url, name, value, queryParamToUse, appendValue) {
+  /**
+   * Append name to URL in trade-doubler link
+   * @param {string} url
+   * @param {string} name
+   * @param {string} value
+   * @param {string} queryParamToUse
+   * @param {string} appendValue
+   * @return {string|*}
+   * @private
+   */
+  appendNameValueToUrlTD_(url, name, value, queryParamToUse, appendValue) {
     let inx1, inx2, inx3, inx4, currentVal;
     inx1 = url.indexOf('epi(');
     if (inx1 !== -1) {
@@ -1352,8 +1298,17 @@ export class FunnelRelay {
     return url; //do not process link
   }
 
-  appendNameValueToUrl_PT_(
-      url, name, value, queryParamToUse, appendValue) {
+  /**
+   * Append name to URL in Partnerize link
+   * @param {string} url
+   * @param {string} name
+   * @param {string} value
+   * @param {string} queryParamToUse
+   * @param {string} appendValue
+   * @return {string|*}
+   * @private
+   */
+  appendNameValueToUrlPT_(url, name, value, queryParamToUse, appendValue) {
     let inx1, inx2, currentVal;
     inx1 = url.indexOf(queryParamToUse);
     if (inx1 !== -1) {
@@ -1378,17 +1333,16 @@ export class FunnelRelay {
 
   /**
    * Append parameter to CJ link
-   * @param url
-   * @param name
-   * @param value
-   * @param queryParamToUse
-   * @param appendValue
+   * @param {string} url
+   * @param {string} name
+   * @param {string} value
+   * @param {string} queryParamToUse
+   * @param {string} appendValue
    * @return {string}
    * @private
    */
-  appendNameValueToUrl_CJ_(
-      url, name, value, queryParamToUse, appendValue) {
-    let inx3 = url.indexOf('dlg/');
+  appendNameValueToUrlCJ_(url, name, value, queryParamToUse, appendValue) {
+    const inx3 = url.indexOf('dlg/');
     if (inx3 !== -1) {
       appendValue = queryParamToUse + '/' + appendValue + '/';
       return this.insertToString_(url, appendValue, inx3 + 4);
@@ -1398,11 +1352,11 @@ export class FunnelRelay {
     } else {
       //url already have parameters prefix by ?
 
-      let inx11 = url.indexOf('?');
-      let inx12 = url.indexOf('sid=', inx11 + 1);
+      const inx11 = url.indexOf('?');
+      const inx12 = url.indexOf('sid=', inx11 + 1);
       if (inx12 !== -1) {
         //url already have "sid=" parameter
-        let inx13 = url.indexOf('&', inx12 + 4);
+        const inx13 = url.indexOf('&', inx12 + 4);
         if (inx13 === -1) {
           //sid=xyz at the end of url
           return url + this.getDelimiter_(url) + appendValue;
@@ -1437,16 +1391,15 @@ export class FunnelRelay {
   /**
    * Append string is specified position.
    *
-   * @param str
-   * @param value
-   * @param position
+   * @param {string} str
+   * @param {string} value
+   * @param {int} position
    * @return {string}
    * @private
    */
   insertToString_(str, value, position) {
-    let str1, str2;
-
-    str1 = str.substring(0, position);
+    let str2;
+    const str1 = str.substring(0, position);
     if (position < str.length) {
       str2 = str.substring(position);
     } else {
@@ -1458,18 +1411,18 @@ export class FunnelRelay {
 
   /**
    * Parse query string
-   * @param query
+   * @param {string} query
    * @return {Map}
    */
   parseQuery_(query) {
-    let params = new Map();
+    const params = new Map();
     if (!query) {
       return params;
     }
 
     const pairs = query.split(/[;&]/);
     for (let i = 0; i < pairs.length; i++) {
-      let KeyVal = pairs[i].split('=');
+      const KeyVal = pairs[i].split('=');
       if (!KeyVal || KeyVal.length !== 2) {
         continue;
       }
@@ -1484,12 +1437,12 @@ export class FunnelRelay {
   /**
    * Tool for getting anchor label
    *
-   * @param anchor
-   * @param maxSize
+   * @param {string} anchor
+   * @param {int} maxSize
    * @private
    */
   getAnchorLabel_(anchor, maxSize) {
-    let labelEm = document.createElement('label');
+    const labelEm = document.createElement('label');
     labelEm.innerHTML = anchor.innerHTML;
     labelEm.normalize();
     let label = labelEm.innerHTML;
@@ -1503,7 +1456,7 @@ export class FunnelRelay {
 
   /**
    * Check is string is either null or empty
-   * @param str
+   * @param {string} str
    * @return {boolean} true if the str is empty
    * @private
    */
@@ -1513,7 +1466,7 @@ export class FunnelRelay {
 
   /**
    * Check if url is absolute
-   * @param url
+   * @param {string} url
    * @return {boolean}
    * @private
    */
@@ -1523,7 +1476,7 @@ export class FunnelRelay {
 
   /**
    * Get the value as boolean type
-   * @param val
+   * @param {*} val
    * @return {boolean}
    * @private
    */
@@ -1548,11 +1501,11 @@ export class FunnelRelay {
    * Get object from the DOM given a path. For example if the path is
    * cg.ABC the finction return the instance at window.cg.ABC
    *
-   * @param {String} path
+   * @param {string} path
    * @return {Object} object in path or null if not found
    */
   getObjectByPath_(path) {
-    let parent = window;
+    const parent = window;
     const arr = path.split('.');
     if (arr.length === 1) {
       return parent[arr[0]];
@@ -1576,7 +1529,7 @@ export class FunnelRelay {
   /**
    * Get delimiter to use for extended value params.
    *
-   * @param url
+   * @param {string} url
    * @return {string}
    * @private
    */
@@ -1599,16 +1552,10 @@ export class GATracker {
   /**
    * Track event
    *
-   * @param {string} eventCategory    text    yes    Typically the object that
-   *     was interacted with (e.g. 'Video')
-   * @param  {string} eventAction    text    yes    The type of interaction
-   *     (e.g.
-   *   'play')
-   * @param {string} eventLabel    text    no    Useful for categorizing events
-   *     (e.g.
-   *   'Fall Campaign')
-   * @param {*} eventValue    integer    no    A numeric value associated with
-   *     the event (e.g. 42)
+   * @param {string} eventCategory
+   * @param {string} eventAction
+   * @param {string} eventLabel
+   * @param {*} eventValue
    * @see https://developers.google.com/analytics/devguides/collection/analyticsjs/events
    */
   trackEvent(eventCategory, eventAction, eventLabel, eventValue) {
@@ -1638,7 +1585,9 @@ export class GATracker {
  * @see https://marketing.adobe.com/resources/help/en_US/sc/implement/function_tl.html
  */
 export class AdobeTracker {
-
+  /**
+   * @param {string} code
+   */
   constructor(code) {
     if (code != null && code.length > 0) {
       this._rsId = code;
@@ -1650,24 +1599,19 @@ export class AdobeTracker {
   /**
    * Track event
    *
-   * @param eventCategory    text    yes    Typically the object that was
-   *     interacted with (e.g. 'Video')
-   * @param  eventAction    text    yes    The type of interaction (e.g.
-   *     'play')
-   * @param eventLabel    text    no    Useful for categorizing events
-   *     (e.g. 'Fall Campaign')
-   * @param eventValue    integer    no    A numeric value associated
-   *     with the event (e.g. 42)
-   * @param fieldsObject
+   * @param {string} eventCategory
+   * @param {string} eventAction
+   * @param {string} eventLabel
+   * @param {*} eventValue
+   * @param {Object}  fieldsObject
    * @see https://developers.google.com/analytics/devguides/collection/analyticsjs/events
    */
-  trackEvent(
-      eventCategory, eventAction, eventLabel, eventValue, fieldsObject) {
-    if (typeof s.tl == 'function') {
-      let tracker = s;
-      let rsId = this._rsId != null ? this._rsId : s_account;
+  trackEvent(eventCategory, eventAction, eventLabel, eventValue, fieldsObject) {
+    if (typeof window.s.tl == 'function') {
+      let tracker = window.s;
+      const rsId = this._rsId != null ? this._rsId : window.s_account;
       if (rsId != null) {
-        tracker = s_gi(rsId);
+        tracker = window.s_gi(rsId);
       }
 
       tracker.linkTrackVars = 'prop1,prop2,prop3,prop4,prop5';
@@ -1678,18 +1622,9 @@ export class AdobeTracker {
       tracker.prop5 = '';
       tracker.linkTrackEvents = 'funnel-relay';
       tracker.events = 'funnel-relay';
-      let str = 'funnel-relay-' + fieldsObject.xid;
+      const str = 'funnel-relay-' + fieldsObject.xid;
       tracker.tl(true, 'o', str, null);
     }
-  }
-
-  /**
-   * Track screenview.
-   *
-   * @param screenName
-   */
-  trackScreenView(screenName) {
-    //not supported
   }
 
   /**
